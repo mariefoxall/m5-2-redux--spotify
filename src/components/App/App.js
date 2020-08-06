@@ -1,5 +1,6 @@
 import React from "react";
 import { useDispatch } from "react-redux";
+import styled from "styled-components";
 
 import {
   BrowserRouter as Router,
@@ -35,7 +36,7 @@ const App = () => {
       });
   }, []);
   return (
-    <>
+    <MobileDiv>
       <GlobalStyles />
       <Router>
         <Switch>
@@ -45,8 +46,18 @@ const App = () => {
           <Redirect to={`/artists/${DEFAULT_ARTIST_ID}`}></Redirect>
         </Switch>
       </Router>
-    </>
+    </MobileDiv>
   );
 };
+
+const MobileDiv = styled.div`
+  position: relative;
+  width: 375px;
+  height: 812px;
+
+  /* Charcoal */
+
+  background: #0b0f14;
+`;
 
 export default App;

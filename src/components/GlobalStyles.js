@@ -8,6 +8,7 @@ span {
   padding: 0;
   border: 0;
   vertical-align: baseline;
+  background-color: #E5E5E5;
 }
 
 /* GLOBAL STYLES */
