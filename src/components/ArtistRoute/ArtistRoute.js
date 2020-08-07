@@ -1,13 +1,16 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
 import styled from "styled-components";
+import PlayButton from "react-play-button";
 
-import { fetchArtistProfile } from "../../helpers/api-helpers";
+import { fetchArtistProfile, fetchTopTracks } from "../../helpers/api-helpers";
 import { useParams } from "react-router-dom";
 import {
-  requestArtistProfile,
+  requestAllArtistInfo,
   receiveArtistProfile,
-  receiveArtistProfileError,
+  receiveArtistInfoError,
+  receiveTopTracks,
+  finishReceivingAllArtistInfo,
 } from "../../actions";
 
 // class ArtistRoute extends Component {
@@ -18,24 +21,52 @@ import {
 
 const ArtistRoute = () => {
   const dispatch = useDispatch();
-  const authStatus = useSelector((state) => state.auth.status);
   const artistStatus = useSelector((state) => state.artists.status);
   const accessToken = useSelector((state) => state.auth.token);
   const artistId = useParams().id;
-
-  const state = useSelector((state) => state);
-  console.log(state);
-
-  // const [artistProfile, setArtistProfile] = React.useState({});
-
   const artistProfile = useSelector((state) => state.artists.currentArtist);
+  const topTracks = useSelector((state) => state.artists.topTracks);
+
+  const [isTrackOnePlaying, setIsTrackOnePlaying] = React.useState(false);
+  const [isTrackTwoPlaying, setIsTrackTwoPlaying] = React.useState(false);
+  const [isTrackThreePlaying, setIsTrackThreePlaying] = React.useState(false);
+
+  const playTrackOne = () => {
+    setIsTrackOnePlaying(true);
+    setIsTrackTwoPlaying(false);
+    setIsTrackThreePlaying(false);
+  };
+
+  const playTrackTwo = () => {
+    setIsTrackOnePlaying(false);
+    setIsTrackTwoPlaying(true);
+    setIsTrackThreePlaying(false);
+  };
+  const playTrackThree = () => {
+    setIsTrackOnePlaying(false);
+    setIsTrackTwoPlaying(false);
+    setIsTrackThreePlaying(true);
+  };
+
+  const stopTrackOne = () => {
+    setIsTrackOnePlaying(false);
+  };
+
+  const stopTrackTwo = () => {
+    setIsTrackTwoPlaying(false);
+  };
+  const stopTrackThree = () => {
+    setIsTrackThreePlaying(false);
+  };
+
+  console.log(topTracks);
 
   React.useEffect(() => {
     if (!accessToken) {
       return;
     }
-    dispatch(requestArtistProfile());
-    fetchArtistProfile(accessToken, artistId)
+    dispatch(requestAllArtistInfo());
+    const artistPromise = fetchArtistProfile(accessToken, artistId)
       .then((data) => {
         console.log(data);
         dispatch(receiveArtistProfile(data));
@@ -43,8 +74,22 @@ const ArtistRoute = () => {
       })
       .catch((err) => {
         console.log(err);
-        dispatch(receiveArtistProfileError());
+        dispatch(receiveArtistInfoError());
       });
+    const tracksPromise = fetchTopTracks(accessToken, artistId)
+      .then((data) => {
+        console.log(data);
+        dispatch(receiveTopTracks(data));
+        // setArtistProfile(data);
+      })
+      .catch((err) => {
+        console.log(err);
+        dispatch(receiveArtistInfoError());
+      });
+
+    Promise.all([artistPromise, tracksPromise]).then(() =>
+      dispatch(finishReceivingAllArtistInfo())
+    );
   }, [accessToken]);
 
   console.log(artistProfile);
@@ -67,6 +112,53 @@ const ArtistRoute = () => {
                 <Genre>{artistProfile.genres[4]}</Genre>
                 <Genre>{artistProfile.genres[6]}</Genre>
               </GenreDiv>
+              {
+                topTracks && (
+                  <Tracks>
+                    <h2>top tracks</h2>
+                    <PlayDiv>
+                      <PlayButton
+                        url={topTracks.tracks[0].preview_url}
+                        playIconColor="white"
+                        stopIconColor="white"
+                        idleBackgroundColor="#494946"
+                        activeBackgroundColor="#FF4FD8"
+                        progressCircleColor="#3354FF"
+                        progressCircleWidth="1"
+                        active={isTrackOnePlaying}
+                        play={playTrackOne}
+                        stop={stopTrackOne}
+                        iconAnimationLength="500"
+                        fadeInLength="1000"
+                        fadeOutLength="1000"
+                      />
+                      <PlayButton
+                        url={topTracks.tracks[1].preview_url}
+                        playIconColor="white"
+                        stopIconColor="white"
+                        idleBackgroundColor="#494946"
+                        progressCircleColor="#3354FF"
+                        progressCircleWidth="1"
+                        active={isTrackTwoPlaying}
+                        play={playTrackTwo}
+                        stop={stopTrackTwo}
+                      />
+                      <PlayButton
+                        url={topTracks.tracks[2].preview_url}
+                        playIconColor="white"
+                        stopIconColor="white"
+                        idleBackgroundColor="#494946"
+                        progressCircleColor="#3354FF"
+                        progressCircleWidth="1"
+                        active={isTrackThreePlaying}
+                        play={playTrackThree}
+                        stop={stopTrackThree}
+                      />
+                    </PlayDiv>
+                  </Tracks>
+                )
+                // <Tracks>{topTracks.tracks[0].name}</Tracks>
+              }
             </ProfileDiv>
           )}
         </>
@@ -170,6 +262,22 @@ const Genre = styled.div`
   color: white;
   padding: 5px 10px;
   margin: 5px;
+`;
+
+const Tracks = styled.div`
+  color: white;
+  position: absolute;
+  top: 340px;
+  background: transparent;
+  width: 200px;
+  left: 87px;
+  text-align: center;
+`;
+
+const PlayDiv = styled.div`
+  display: flex;
+  background: transparent;
+  justify-content: space-between;
 `;
 
 export default ArtistRoute;
